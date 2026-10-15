@@ -1,0 +1,7 @@
+# PyTorch checkpoint files (prevent committing bulky training weights)
+*.pth
+*.pt
+advanced_history.json
+__pycache__/
+*.pyc
+.DS_Store

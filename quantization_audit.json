@@ -1,0 +1,32 @@
+{
+  "Stage 1 (Dual 32-ch)": {
+    "sqnr_db": 33.37,
+    "cosine_similarity": 0.99979,
+    "status": "PASS",
+    "decision": "Keep INT8"
+  },
+  "Stage 2 (Dual 64-ch)": {
+    "sqnr_db": 32.47,
+    "cosine_similarity": 0.99972,
+    "status": "PASS",
+    "decision": "Keep INT8"
+  },
+  "Stage 3 (Dual 128-ch)": {
+    "sqnr_db": 33.75,
+    "cosine_similarity": 0.9998,
+    "status": "PASS",
+    "decision": "Keep INT8"
+  },
+  "Global Avg Pool (GAP)": {
+    "sqnr_db": 31.78,
+    "cosine_similarity": 0.99968,
+    "status": "PASS",
+    "decision": "Keep INT8"
+  },
+  "Linear Classifier": {
+    "sqnr_db": 34.75,
+    "cosine_similarity": 0.99985,
+    "status": "PASS",
+    "decision": "Keep INT8"
+  }
+}

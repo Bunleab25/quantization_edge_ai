@@ -1,0 +1,105 @@
+{
+  "quant": {
+    "type": "Quantize",
+    "activation_scale": 0.025544211268424988,
+    "activation_zero_point": 17
+  },
+  "model.stage1.conv1": {
+    "type": "ConvReLU2d",
+    "activation_scale": 0.05180882662534714,
+    "activation_zero_point": 0,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 32,
+    "weight_scale_sample": [
+      0.002925,
+      0.005922,
+      0.00788,
+      0.006986,
+      0.005302
+    ]
+  },
+  "model.stage1.conv2": {
+    "type": "ConvReLU2d",
+    "activation_scale": 0.04854154959321022,
+    "activation_zero_point": 0,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 32,
+    "weight_scale_sample": [
+      0.000857,
+      0.001697,
+      0.000927,
+      0.000936,
+      0.001095
+    ]
+  },
+  "model.stage2.conv1": {
+    "type": "ConvReLU2d",
+    "activation_scale": 0.04257572814822197,
+    "activation_zero_point": 0,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 64,
+    "weight_scale_sample": [
+      0.000931,
+      0.00117,
+      0.000941,
+      0.001246,
+      0.001046
+    ]
+  },
+  "model.stage2.conv2": {
+    "type": "ConvReLU2d",
+    "activation_scale": 0.04315635934472084,
+    "activation_zero_point": 0,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 64,
+    "weight_scale_sample": [
+      0.000726,
+      0.000682,
+      0.000917,
+      0.000694,
+      0.001538
+    ]
+  },
+  "model.stage3.conv1": {
+    "type": "ConvReLU2d",
+    "activation_scale": 0.03703449293971062,
+    "activation_zero_point": 0,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 128,
+    "weight_scale_sample": [
+      0.001696,
+      0.001273,
+      0.000997,
+      0.001578,
+      0.000918
+    ]
+  },
+  "model.stage3.conv2": {
+    "type": "ConvReLU2d",
+    "activation_scale": 0.04393356293439865,
+    "activation_zero_point": 0,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 128,
+    "weight_scale_sample": [
+      0.001533,
+      0.001409,
+      0.001283,
+      0.001566,
+      0.00149
+    ]
+  },
+  "model.classifier": {
+    "type": "Linear",
+    "activation_scale": 0.060586027801036835,
+    "activation_zero_point": 50,
+    "weight_qscheme": "per_channel_symmetric",
+    "num_channels": 10,
+    "weight_scale_sample": [
+      0.001838,
+      0.001963,
+      0.002294,
+      0.001951,
+      0.001928
+    ]
+  }
+}
