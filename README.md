@@ -90,3 +90,5 @@ Numerical scales ($S$) and zero-points ($Z$) for each operator are tabulated in 
 
 MIT License.
 <!-- YOLO achievement update -->
+
+<!-- Verified edge AI pipeline -->
