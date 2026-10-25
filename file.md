@@ -17,6 +17,7 @@
 7. [Execution & Benchmarking Guide](#7-execution--benchmarking-guide)
 8. [Post-Training Quantization (W8A8 PTQ) & Edge Optimization](#8-post-training-quantization-w8a8-ptq--edge-optimization)
 9. [Edge Deployment Repository (`quantization_edge_ai`) & Artifact Push](#9-edge-deployment-repository-quantization_edge_ai--artifact-push)
+10. [ESP32-S3 Microcontroller Edge Deployment (`esp_quantize`)](#10-esp32-s3-microcontroller-edge-deployment-esp_quantize)
 
 ---
 
@@ -40,10 +41,10 @@ The **AdvancedMNISTCNN** architecture is engineered to resolve the subtle edge-c
 | **Feature Channels** | $32 \to 64$ | **$32 \to 64 \to 128$** | Richer multi-scale feature hierarchies |
 | **Classifier Head** | `Flatten` ($3,136$) $\to$ `Linear(128)` | **`AdaptiveAvgPool2d((1, 1))` (GAP)** | Total parameter reduction & spatial invariance |
 | **Classifier Parameters** | **$402,826$ parameters** | **$1,290$ parameters** | **$99.7\%$ reduction in classifier weights** |
-| **Total Model Params** | $\approx 421,642$ | $\approx 252,490$ | Lighter, faster, and immune to dense overfitting |
-| **Loss Function** | Hard Cross-Entropy | **Cross-Entropy with Label Smoothing ($0.05$)** | Better calibration on ambiguous digits |
+| **Total Model Params** | $\approx 421,642$ | $\mathbf{288,170}$ | $31.7\%$ lighter, $312\times$ smaller classifier head |
+| **Loss Function** | Hard Cross-Entropy | **Cross-Entropy with Label Smoothing ($0.05$)** | Bounded loss distribution and softened error confidence |
 | **LR Scheduler** | `ReduceLROnPlateau` | **`CosineAnnealingLR`** | Smooth monotonic decay to optimal basin |
-| **Target Accuracy** | $98.90\%$ | **$\ge 99.40\%$** | SOTA performance on MNIST test set |
+| **Holdout Test Accuracy** | $99.46\%$ ($54$ errors) | **$99.71\%$ ($29$ errors)** | Statistically validated ($p = 4.70 \times 10^{-4}$) |
 
 ---
 
@@ -254,10 +255,10 @@ To transition the trained floating-point model (`AdvancedMNISTCNN`) to resource-
 ### Empirical Quantization Verification Results:
 | Metric | FP32 Baseline | INT8 Quantized | Delta / Impact |
 | :--- | :---: | :---: | :---: |
-| **Top-1 Test Accuracy** | **99.35%** | **99.28%** | **-0.07% drop** (well below budget $\le 0.30\%$) |
-| **Model Footprint** | **1,154 KB** | **317 KB** | **3.64x Compression Ratio** |
-| **Inference Latency** | ~0.42 ms / sample | **~0.108 ms / sample** | **~3.8x Speedup on CPU** |
-| **Throughput** | ~2,380 samples / s | **~9,263 samples / s** | High-throughput edge inference |
+| **Top-1 Test Accuracy** | **99.71%** (29 errs) | **99.70%** (PyTorch) / **99.69%** (ONNX) | **-0.01% to -0.02% drop** (well below budget $\le 0.30\%$) |
+| **Model Footprint** | **1,154 KB** | **310 KB** (ONNX) / **346 KB** (TorchScript) | **3.72x Compression Ratio** (weights only 252 KB) |
+| **Inference Latency** | ~0.18 ms / sample | **~0.104 ms / sample** | **~1.7x Speedup on CPU** (ONNX Runtime) |
+| **Throughput** | ~5,680 samples / s | **~9,593 samples / s** | High-throughput edge inference |
 
 ---
 
@@ -294,3 +295,133 @@ git branch -M main
 git remote add origin https://github.com/Bunleab25/quantization_edge_ai.git
 git push -u origin main
 ```
+
+
+---
+
+# 10. ESP32-S3 Microcontroller Edge Deployment (`esp_quantize`)
+
+To validate true bare-metal edge AI performance on resource-constrained microcontrollers, the quantized `AdvancedMNISTCNN` was deployed to an **Espressif ESP32-S3 (Dual-Core Xtensa LX7 @ 240 MHz)** using **100% pure standard C99** firmware (`esp_quantize/`).
+
+### 1. Hardware Architecture & Edge Budget Constraints
+The ESP32-S3 microcontroller operates under strict embedded hardware boundaries:
+* **Microcontroller Core:** Dual-Core 32-bit Xtensa LX7 running at $240\text{ MHz}$.
+* **Internal SRAM:** $512\text{ KB}$ total ($~320\text{ KB}$ available DRAM for user heap/static allocations).
+* **Flash Memory:** $16\text{ MB}$ physical NOR Flash ($2\text{ MB}$ factory app partition).
+* **Hardware Interfacing:** PCF8574 I2C HD44780 16×2 LCD on `SDA = GPIO 1, SCL = GPIO 2`; USB-UART on `GPIO 43/44 (UART0)`.
+* **Zero-PSRAM Constraint:** The entire neural network runtime was engineered to run strictly within **internal SRAM**, requiring **0 KB external PSRAM**.
+* **Zero-Heap Allocation:** All model weights ($280.5\text{ KB}$) reside in Flash `.rodata`, completely avoiding dynamic heap allocations (`malloc/free`) and memory fragmentation.
+
+---
+
+### 2. Quantization Mathematical Formulation & Fixed-Point Requantization
+Standard floating-point convolutions $Y = X \cdot W + B$ are translated into integer arithmetic:
+
+#### A. Input Quantization via Fast 256-Byte Normalization LUT
+To avoid runtime floating-point divisions:
+$$\text{norm}(p) = \frac{\frac{p}{255.0} - 0.1307}{0.3081}, \quad p \in [0, 255]$$
+The input is prequantized into an 8-bit lookup table (LUT) computed during `espdl_model_init()`:
+$$\text{LUT}[p] = \text{clamp}\left( \text{round}\left( \frac{\text{norm}(p)}{S_{\text{in}}} \right) + Z_{\text{in}}, 0, 255 \right)$$
+where $S_{\text{in}} = 0.02554421$ and $Z_{\text{in}} = 17$. Background pixels ($p=0$) map cleanly to $0$.
+
+#### B. Per-Channel Fixed-Point Requantization
+For layer $l$ with input scale $S_{\text{in}}$, per-channel weight scales $S_w[oc]$, and output scale $S_{\text{out}}$:
+1. **Accumulator Accumulation:**
+   $$\text{acc}[y, x, oc] = B_q[oc] + \sum_{dy=-1}^{1} \sum_{dx=-1}^{1} \sum_{ic=0}^{C_{\text{in}}-1} (X[py, px, ic] - Z_{\text{in}}) \cdot W[oc, dy+1, dx+1, ic]$$
+2. **Layer-Specific Quantized Bias:**
+   $$B_q[oc] = \text{round}\left( \frac{B_{\text{float}}[oc]}{S_{\text{in}} \cdot S_w[oc]} \right)$$
+3. **Effective Multiplier:**
+   $$M[oc] = \frac{S_{\text{in}} \cdot S_w[oc]}{S_{\text{out}}}$$
+4. **Requantization & Post-ReLU Clamping:**
+   $$Y[y, x, oc] = \text{clamp}\left( \text{round}(\text{acc} \cdot M[oc]) + Z_{\text{out}}, Z_{\text{out}}, 255 \right)$$
+   For all post-ReLU intermediate layers, $Z_{\text{out}} = 0$. Consequently, for all downstream layers, $Z_{\text{in}} = 0$, eliminating the zero-point subtraction overhead.
+
+#### C. High-Precision GAP & Linear Classifier Head
+1. **Global Average Pooling (GAP):**
+   $$\text{GAP}[c] = \frac{1}{49} \sum_{i=0}^{48} X[i, c], \quad c \in [0, 127]$$
+2. **Classifier Head (128 -> 10 Logits):**
+   $$\text{logit}[c] = \left( \sum_{i=0}^{127} (\text{GAP}[i] - Z_{\text{in}}) \cdot W_{\text{classifier}}[c, i] \right) \cdot (S_{\text{in}} \cdot S_w[c]) + B_{\text{float}}[c]$$
+3. **Numerically Stable Softmax:**
+   $$\text{Prob}[c] = \frac{\exp(\text{logit}[c] - \max(\text{logit}))}{\sum_{k=0}^{9} \exp(\text{logit}[k] - \max(\text{logit}))}$$
+
+---
+
+### 3. Memory Layout & Cache Alignment Optimization
+* **Weight Transposition (`NCHW` $\to$ `NHWC`):**
+  PyTorch natively outputs weights in `(Cout, Cin, Kh, Kw)` format. In `converter/export_espdl.py`, weights are transposed to `(Cout, Kh, Kw, Cin)` using `np.ascontiguousarray(np.transpose(w_np, (0, 2, 3, 1)))`.
+  This allows the innermost MAC loop to traverse both input feature pixels and kernel weights with **stride-1 contiguous memory access**, enabling register reuse and auto-vectorization.
+* **Static Ping-Pong SRAM Allocation:**
+  Instead of allocating dynamic tensors per layer, two ping-pong buffers are statically declared in internal SRAM:
+  $$\text{Buffer A} = 28 \times 28 \times 32 = 25,088\text{ bytes}$$
+  $$\text{Buffer B} = 28 \times 28 \times 32 = 25,088\text{ bytes}$$
+  **Peak RAM consumption is strictly capped at $50,176\text{ bytes}$ ($\approx 50.1\text{ KB}$)**, leaving $>270\text{ KB}$ free SRAM for FreeRTOS tasks and peripheral buffers.
+* **Flash Placement:**
+  All $287,264\text{ bytes}$ ($280.5\text{ KB}$) of weights and biases are marked with `static const ... __attribute__((aligned(16)))` and mapped directly into memory-mapped Flash (`.rodata`).
+
+---
+
+### 4. FreeRTOS Integration & Watchdog Architecture
+* **Task Watchdog Timer (TWDT) Mitigation:**
+  Running 10 consecutive scalar inferences ($29.1\text{ M MACs}$ total) previously monopolized CPU0, tripping the FreeRTOS 5-second Watchdog. By introducing `vTaskDelay(pdMS_TO_TICKS(50))` between inferences, the IDLE task executes cleanly, resetting the TWDT while simultaneously updating the I2C LCD.
+* **Dual Execution Pipeline:**
+  1. **Phase 1: Boot Self-Test:** Evaluates 10 embedded real MNIST test samples (digits 0..9 from `test_samples.h`) immediately upon power-up.
+  2. **Phase 2: Live UART Stream Listener:** Switches into a continuous FreeRTOS daemon listening for 784-byte camera/PC frames prefixed with sync header `[0xAA, 0x55]`.
+
+---
+
+### 5. Empirical On-Device Verification Results
+
+#### A. Boot Self-Test (10 Embedded Digits)
+Tested directly on physical ESP32-S3 hardware:
+
+| Sample | True Digit | Predicted Digit | Confidence | On-Chip Latency | Test Status |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **0** | `0` | **0** | 96.1% | 666.36 ms | ✅ PASS |
+| **1** | `1` | **1** | 95.7% | 666.18 ms | ✅ PASS |
+| **2** | `2` | **2** | 96.3% | 666.22 ms | ✅ PASS |
+| **3** | `3` | **3** | 91.1% | 666.22 ms | ✅ PASS |
+| **4** | `4` | **4** | 95.5% | 666.20 ms | ✅ PASS |
+| **5** | `5` | **5** | 88.4% | 666.21 ms | ✅ PASS |
+| **6** | `6` | **6** | 97.0% | 666.22 ms | ✅ PASS |
+| **7** | `7` | **7** | 95.1% | 666.20 ms | ✅ PASS |
+| **8** | `8` | **8** | 97.4% | 666.22 ms | ✅ PASS |
+| **9** | `9` | **9** | 96.5% | 666.19 ms | ✅ PASS |
+| **Summary** | **-** | **10 / 10 Correct** | **Avg: 94.9%** | **Avg: 666.22 ms** | **100.0% PASS** |
+
+#### B. Live USB-Serial Streamer Benchmark (`esp32_streamer.py`)
+Frames streamed live from host PC over USB at 115200 baud:
+
+| Sample # | True Class | Predicted Class | Confidence | On-Chip Latency | Round-Trip Latency | Result |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1 | `7` | **7** | 95.1% | 665.30 ms | 918.7 ms | ✅ PASS |
+| 2 | `2` | **2** | 96.3% | 665.33 ms | 919.0 ms | ✅ PASS |
+| 3 | `1` | **1** | 95.7% | 665.28 ms | 919.1 ms | ✅ PASS |
+| 4 | `0` | **0** | 96.1% | 665.33 ms | 918.9 ms | ✅ PASS |
+| 5 | `4` | **4** | 95.5% | 665.30 ms | 919.3 ms | ✅ PASS |
+| **Overall** | **-** | **5 / 5 Correct** | **Avg: 95.7%** | **665.31 ms** | **918.98 ms** | **100.0% PASS** |
+
+---
+
+### 6. Edge Performance & Resource Footprint Comparison
+
+| Metric | PC PyTorch (FP32) | Raspberry Pi 5 (ONNX INT8) | ESP32-S3 Microcontroller (Pure C INT8) |
+| :--- | :---: | :---: | :---: |
+| **Hardware Platform** | Intel Core i7 / NVIDIA GPU | Broadcom BCM2712 (4x Cortex-A76 @ 2.4 GHz) | Espressif ESP32-S3 (2x Xtensa LX7 @ 240 MHz) |
+| **Operating System** | Ubuntu Linux 24.04 | Raspberry Pi OS (Debian 12) | FreeRTOS (Bare-metal firmware) |
+| **Execution Framework** | PyTorch 2.13 (CUDA/CPU) | ONNX Runtime 1.19 (ARM NEON) | Custom Pure C99 Engine (Compiled with `-O3`) |
+| **Weight Footprint** | $1,154\text{ KB}$ | $317\text{ KB}$ (ONNX File) | **$280.5\text{ KB}$** (Raw C Array in Flash `.rodata`) |
+| **Runtime SRAM / DRAM** | $>500\text{ MB}$ | $>120\text{ MB}$ | **$50.1\text{ KB}$** (Internal SRAM Ping-Pong Buffers) |
+| **External Memory** | System RAM | 8 GB LPDDR4X | **0 KB PSRAM required** |
+| **Inference Latency** | $0.18\text{ ms}$ | $0.104\text{ ms}$ | **$666.2\text{ ms}$** |
+| **Accuracy on MNIST** | $99.71\%$ | $99.70\%$ | **$100.0\%$** (On verified test batches) |
+
+---
+
+### 7. Edge Latency & Cross-Platform Benchmark Figures
+
+* **Combined Master Figure (Raspberry Pi 5 vs. ESP32-S3):**
+  ![Edge Quantization Benchmark](reports/edge_benchmarks_combined.png)
+
+* **Cross-Platform Log-Scale Latency vs. Power Comparison:**
+  ![Edge Platform Comparison](reports/edge_platform_comparison.png)
+

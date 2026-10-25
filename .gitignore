@@ -5,3 +5,12 @@ advanced_history.json
 __pycache__/
 *.pyc
 .DS_Store
+
+# Embedded & ESP-IDF build artifacts
+build/
+*.bin
+*.elf
+*.map
+test_pc_bin
+esp_quantize/tools/data/
+

@@ -65,6 +65,7 @@ def benchmark_model(model_path: str, images: np.ndarray, labels: np.ndarray, num
         session.run(None, {input_name: images[:1]})
 
     correct = 0
+    cum_acc = []
     start_time = time.perf_counter()
     for i in range(n):
         sample = images[i:i+1]
@@ -72,6 +73,8 @@ def benchmark_model(model_path: str, images: np.ndarray, labels: np.ndarray, num
         pred = np.argmax(logits, axis=1)[0]
         if pred == labels[i]:
             correct += 1
+        if (i + 1) % 100 == 0 or i == n - 1:
+            cum_acc.append(correct / (i + 1))
 
     total_time = time.perf_counter() - start_time
     avg_latency_ms = (total_time / n) * 1000.0
@@ -82,17 +85,51 @@ def benchmark_model(model_path: str, images: np.ndarray, labels: np.ndarray, num
     print(f"Average Latency:   {avg_latency_ms:.3f} ms / sample")
     print(f"Throughput:        {n / total_time:.1f} samples / s")
     print("=" * 70)
+    return cum_acc
+
+
+def plot_onnx_accuracy_graph(
+    cum_acc: list,
+    model_label: str = "INT8",
+    save_path: str = "reports/onnx_quantization_accuracy.png",
+):
+    """Saves clean classic evaluation graph strictly following GEMINI.md standards."""
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.ticker as ticker
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        fig, ax = plt.subplots(figsize=(7.5, 4.2), dpi=300)
+        ax.plot(range(len(cum_acc)), cum_acc, label=model_label, color="#1f77b4" if "FP32" in model_label else "#ff7f0e", linewidth=1.5)
+        ax.set_title("model accuracy", fontsize=11, pad=8)
+        ax.set_ylabel("accuracy", fontsize=10)
+        ax.set_xlabel("epoch", fontsize=10)
+        ax.legend([model_label], loc="upper left", frameon=True)
+        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.4f"))
+        ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300)
+        plt.close()
+        print(f"Saved evaluation graph to: {save_path}")
+    except Exception as e:
+        print(f"Plot note: {e}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Verify ONNX edge models on MNIST test dataset")
     parser.add_argument("--model", type=str, default="quantized_model_int8.onnx", help="Path to ONNX model")
     parser.add_argument("--data-dir", type=str, default="data", help="Path to dataset directory")
     parser.add_argument("--samples", type=int, default=10000, help="Number of test samples to benchmark")
+    parser.add_argument("--plot", action="store_true", help="Generate classic style evaluation graph")
     args = parser.parse_args()
 
     images, labels = load_test_dataset(args.data_dir)
     images_proc = preprocess_mnist(images)
-    benchmark_model(args.model, images_proc, labels, args.samples)
+    cum_acc = benchmark_model(args.model, images_proc, labels, args.samples)
+
+    if args.plot:
+        label = "FP32" if "fp32" in args.model.lower() else "INT8"
+        plot_onnx_accuracy_graph(cum_acc, model_label=label)
+
 
 if __name__ == "__main__":
     main()
