@@ -18,12 +18,19 @@
 8. [Post-Training Quantization (W8A8 PTQ) & Edge Optimization](#8-post-training-quantization-w8a8-ptq--edge-optimization)
 9. [Edge Deployment Repository (`quantization_edge_ai`) & Artifact Push](#9-edge-deployment-repository-quantization_edge_ai--artifact-push)
 10. [ESP32-S3 Microcontroller Edge Deployment (`esp_quantize`)](#10-esp32-s3-microcontroller-edge-deployment-esp_quantize)
+11. [Raspberry Pi Single-Board Computer Edge Deployment (`pi_quantize`)](#11-raspberry-pi-single-board-computer-edge-deployment-pi_quantize)
+12. [Cross-Platform Edge Hardware Scrutiny & Comparison](#12-cross-platform-edge-hardware-scrutiny--comparison)
 
 ---
 
 # 1. Executive Summary & Motivation
 
 The **AdvancedMNISTCNN** architecture is engineered to resolve the subtle edge-case handwriting confusions ($9 \leftrightarrow 4$, $8 \leftrightarrow 9$, $2 \leftrightarrow 7$, $3 \leftrightarrow 5$) identified in our diagnostic error analysis. 
+
+### Exploratory Data Analysis (EDA):
+<p align="center">
+  <img src="reports/eda_samples.png" width="85%" alt="MNIST Exploratory Data Analysis" />
+</p>
 
 ### Core Architectural Philosophy:
 1. **Deeper Receptive Field via Dual Convolutions**: Stacking two $3\times3$ convolutions per stage provides the expressive power of a $5\times5$ receptive field with **$28\%$ fewer parameters** and an extra non-linear ReLU activation.
@@ -86,6 +93,11 @@ flowchart TD
     P2 --> C3_1 --> C3_2 --> S3_OUT
     S3_OUT --> GAP --> FLAT --> DROP --> FC
 ```
+
+### Visual Architectural Topology:
+<p align="center">
+  <img src="reports/architecture_diagram.png" width="85%" alt="AdvancedMNISTCNN Visual Architecture" />
+</p>
 
 ---
 
@@ -234,6 +246,22 @@ python train_advanced.py --epochs 12 --batch-size 64 --lr 0.001 --label-smoothin
 ```
 *(Saves `checkpoints/best_advanced_model.pth` and `reports/fit_diagnostic_advanced.png`)*
 
+### Training Dynamics & Fit Diagnostic:
+<p align="center">
+  <img src="reports/learning_curves.png" width="49%" alt="Comparative Learning Curves" />
+  <img src="reports/fit_diagnostic_analysis.png" width="49%" alt="Fit Diagnostic Analysis" />
+</p>
+
+### Statistical Evaluation & Error Diagnostics:
+<p align="center">
+  <img src="reports/confusion_matrix_advanced.png" width="49%" alt="Confusion Matrix" />
+  <img src="reports/misclassifications.png" width="49%" alt="Misclassified Samples Breakdown" />
+</p>
+
+<p align="center">
+  <img src="reports/real_test_predictions.png" width="80%" alt="Hold-Out Test Predictions" />
+</p>
+
 ---
 
 # 8. Post-Training Quantization (W8A8 PTQ) & Edge Optimization
@@ -259,6 +287,16 @@ To transition the trained floating-point model (`AdvancedMNISTCNN`) to resource-
 | **Model Footprint** | **1,154 KB** | **310 KB** (ONNX) / **346 KB** (TorchScript) | **3.72x Compression Ratio** (weights only 252 KB) |
 | **Inference Latency** | ~0.18 ms / sample | **~0.104 ms / sample** | **~1.7x Speedup on CPU** (ONNX Runtime) |
 | **Throughput** | ~5,680 samples / s | **~9,593 samples / s** | High-throughput edge inference |
+
+### Post-Training Quantization Report & Layer Sensitivity Audit:
+<p align="center">
+  <img src="reports/quantization_report.png" width="95%" alt="Quantization Technical Report" />
+</p>
+
+<p align="center">
+  <img src="reports/quantization_accuracy.png" width="49%" alt="Quantization Accuracy" />
+  <img src="reports/quantization_latency.png" width="49%" alt="Quantization Latency" />
+</p>
 
 ---
 
@@ -400,6 +438,11 @@ Frames streamed live from host PC over USB at 115200 baud:
 | 5 | `4` | **4** | 95.5% | 665.30 ms | 919.3 ms | ✅ PASS |
 | **Overall** | **-** | **5 / 5 Correct** | **Avg: 95.7%** | **665.31 ms** | **918.98 ms** | **100.0% PASS** |
 
+### ESP32-S3 Hardware Latency & Accuracy Benchmark:
+<p align="center">
+  <img src="reports/esp32s3_benchmark.png" width="75%" alt="ESP32-S3 Hardware Benchmark" />
+</p>
+
 ---
 
 ### 6. Edge Performance & Resource Footprint Comparison
@@ -417,11 +460,54 @@ Frames streamed live from host PC over USB at 115200 baud:
 
 ---
 
-### 7. Edge Latency & Cross-Platform Benchmark Figures
+# 11. Raspberry Pi Single-Board Computer Edge Deployment (`pi_quantize`)
 
-* **Combined Master Figure (Raspberry Pi 5 vs. ESP32-S3):**
-  ![Edge Quantization Benchmark](reports/edge_benchmarks_combined.png)
+To validate edge performance on Linux single-board computers (SBCs), the quantized `AdvancedMNISTCNN` ONNX graph was evaluated on a **Raspberry Pi 5 (Quad-Core 64-bit ARM Cortex-A76 @ 2.4 GHz, 8 GB LPDDR4X)** using **ONNX Runtime with ARM NEON SIMD vectorization**.
 
-* **Cross-Platform Log-Scale Latency vs. Power Comparison:**
-  ![Edge Platform Comparison](reports/edge_platform_comparison.png)
+### 1. Hardware Architecture & SIMD Integer Acceleration
+* **ARM NEON 128-bit Vectorization:** PyTorch and ONNX Runtime translate 8-bit quantized weights and activations into 128-bit SIMD registers, executing four 8-bit operations simultaneously per lane.
+* **Latency Impact:** Slashes per-sample inference latency from $1.733\text{ ms}$ (FP32) down to **$0.282\text{ ms}$ (INT8)**, achieving **$6.15\times$ speedup**.
+* **Throughput:** Throughput jumps from $577.0\text{ samples/s}$ to **$3,546.6\text{ samples/s}$** ($+515\%$ gain).
+* **Accuracy Parity:** Yields **$99.69\%$** top-1 accuracy over the full 10,000 test set ($9,969 / 10,000$), identical to the embedded C engine within 2 errors.
+
+### 2. Empirical Raspberry Pi Benchmark Figures:
+<p align="center">
+  <img src="reports/raspberry_pi_benchmark.png" width="75%" alt="Raspberry Pi 5 Benchmark" />
+</p>
+
+<p align="center">
+  <img src="reports/raspberry_pi_accuracy.png" width="75%" alt="Raspberry Pi Accuracy Convergence" />
+</p>
+
+---
+
+# 12. Cross-Platform Edge Hardware Scrutiny & Comparison
+
+To evaluate edge scalability across computing tiers, we audited inference latency, power envelope, memory footprints, and classification accuracy across two tiers: **Tier 1: Ultra-Low-Power MCU (ESP32-S3)** and **Tier 2: High-Performance Edge SBC (Raspberry Pi 5)**.
+
+### Cross-Platform Hardware Taxonomy:
+| Dimension | Tier 1: Microcontroller (MCU) | Tier 2: Single-Board Computer (SBC) | Host Workstation (PC) |
+| :--- | :--- | :--- | :--- |
+| **Hardware** | **Espressif ESP32-S3** | **Raspberry Pi 5 Model B** | Intel Core i7 / NVIDIA RTX |
+| **CPU Architecture** | Dual-core 32-bit Xtensa LX7 @ 240 MHz | Quad-core 64-bit ARM Cortex-A76 @ 2.4 GHz | x86_64 12-core @ 4.7 GHz |
+| **Operating System** | Bare-metal FreeRTOS | Raspberry Pi OS (Debian 12 64-bit) | Ubuntu Linux 24.04 LTS |
+| **Execution Engine** | Pure C99 integer pipeline (`-O3`) | ONNX Runtime (ARM NEON SIMD) | PyTorch 2.13 / ONNX Runtime |
+| **RAM Budget** | $512\text{ KB}$ SRAM ($50.1\text{ KB}$ peak used) | $8\text{ GB}$ LPDDR4X ($120\text{ MB}$ RSS) | $32\text{ GB}$ DDR5 |
+| **External PSRAM** | **0 KB required** (Internal SRAM only) | N/A | N/A |
+| **Model Weight Storage**| **$280.5\text{ KB}$** (Flash `.rodata`) | **$309.9\text{ KB}$** (ONNX File) | $1,154\text{ KB}$ (FP32) / $317\text{ KB}$ (INT8) |
+| **Inference Latency** | **$666.2\text{ ms}$** | **$0.282\text{ ms}$** | **$0.104\text{ ms}$** |
+| **Throughput (FPS)** | $1.5\text{ samples/s}$ | **$3,546.6\text{ samples/s}$** | **$9,593.0\text{ samples/s}$** |
+| **Power Consumption** | $\approx 0.5\text{ W}$ | $\approx 5\text{ W}$ | $\approx 65\text{ W} - 250\text{ W}$ |
+| **Accuracy on 10k Test** | **$99.69\%$** ($31$ errors) | **$99.69\%$** ($31$ errors) | **$99.71\%$** ($29$ errors) |
+
+### Comprehensive Master Figure (Raspberry Pi 5 vs. ESP32-S3):
+<p align="center">
+  <img src="reports/edge_benchmarks_combined.png" width="95%" alt="Edge Benchmarks Combined" />
+</p>
+
+### Cross-Platform Log-Scale Latency vs. Power Comparison:
+<p align="center">
+  <img src="reports/edge_platform_comparison.png" width="80%" alt="Log-Scale Latency Comparison" />
+</p>
+
 
