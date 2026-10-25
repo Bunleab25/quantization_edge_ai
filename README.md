@@ -8,19 +8,16 @@ Deployment suite for post-training quantized (W8A8 INT8) Convolutional Neural Ne
 
 This repository provides an end-to-end edge AI deployment pipeline for handwritten digit recognition, translating [`AdvancedMNISTCNN`](src/model_advanced.py) from PyTorch floating-point research into optimized, real-time edge hardware (detailed technical blueprints and mathematics in [`docs/file.md`](docs/file.md)):
 
-```
-+---------------------------------------------------------------------------------------------------------+
-|                                    Dual-Tier Edge Hardware Architecture                                 |
-+---------------------------------------------------------------------------------------------------------+
-|  Tier 1: Microcontroller (MCU)                   Tier 2: Single-Board Computer (SBC)                    |
-|  Espressif ESP32-S3                              Raspberry Pi 5 Model B                                 |
-|  - Dual-Core Xtensa LX7 @ 240 MHz                - Quad-Core 64-bit ARM Cortex-A76 @ 2.4 GHz            |
-|  - 100% Pure Standard C99 (`esp_quantize/`)      - ARM NEON SIMD Accelerated (`pi_quantize/`)           |
-|  - Zero PSRAM used (50.1 KB internal SRAM)       - ONNX Runtime 1.19+ Engine                            |
-|  - Zero Heap Allocation (Flash `.rodata` weights)- High-Throughput Streamer (3,546.6 FPS)               |
-|  - Target: Ultra-Low-Power Smart Sensor Node     - Target: Embedded Linux Edge Gateway                  |
-+---------------------------------------------------------------------------------------------------------+
-```
+| Architectural Tier | Tier 1: Microcontroller (MCU) | Tier 2: Single-Board Computer (SBC) |
+| :--- | :--- | :--- |
+| **Hardware Platform** | **Espressif ESP32-S3** | **Raspberry Pi 5 Model B** |
+| **Processor Architecture** | Dual-Core 32-bit Xtensa LX7 @ 240 MHz | Quad-Core 64-bit ARM Cortex-A76 @ 2.4 GHz |
+| **Deployment Suite** | [`esp_quantize/`](esp_quantize/) (100% Pure Standard C99) | [`pi_quantize/`](pi_quantize/) (ARM NEON SIMD Accelerated) |
+| **Inference Framework** | Bare-metal FreeRTOS (`-O3` optimized) | ONNX Runtime 1.19+ Engine |
+| **Memory Allocation** | **Zero PSRAM** (50.1 KB internal SRAM) | Standard Linux DRAM (~120 MB RSS) |
+| **Weight Placement** | Static Flash `.rodata` (280.5 KB, zero heap) | Memory-mapped INT8 ONNX file (309.9 KB) |
+| **Inference Throughput** | 1.5 samples/s (Single-core FreeRTOS) | **3,546.6 samples/s** (High-throughput HUD) |
+| **Target Deployment** | Ultra-Low-Power Smart Sensor Node | Real-Time Embedded Vision Gateway |
 
 ---
 
@@ -46,55 +43,35 @@ All metrics are empirically verified over all **10,000 holdout test images** (`d
 
 ```
 quantization_edge_ai/
-├── data/                         # 10,000 MNIST Hold-Out Test Dataset (.npz & raw ubyte)
-├── docs/                         # Technical documentation & architecture blueprints
-│   └── file.md                   # Complete architectural blueprint & mathematical specification
-├── esp_quantize/                 # Tier 1: ESP32-S3 Microcontroller Edge Deployment (C99)
-│   ├── converter/export_espdl.py # Transposes PyTorch/ONNX weights into C headers
-│   ├── evaluate_full_10k_c.c     # Host C99 harness benchmarking 10,000 samples
-│   ├── test_pc_inference.c       # Quick C99 verification on embedded digits
-│   ├── tools/esp32_streamer.py   # Live USB-UART streamer from host to ESP32-S3
-│   └── firmware/                 # Complete ESP-IDF FreeRTOS C project (Zero-PSRAM)
-├── models/                       # Edge-Deployable Model Artifacts & Audit Logs
-│   ├── quantized_model_int8.onnx # Production W8A8 INT8 ONNX graph (309.9 KB)
-│   ├── model_fp32.onnx           # Unquantized FP32 baseline ONNX graph (1.15 MB)
-│   ├── file.onnx                 # INT8 ONNX deployment alias
-│   ├── quantization_scales_zp.json # Layer-by-layer scale (S) and zero-point (Z) tables
-│   └── quantization_audit.json   # Quantitative sensitivity audit (Layer SQNR & Cosine Sim)
-├── pi_quantize/                  # Tier 2: Raspberry Pi Edge Deployment Suite
-│   ├── benchmark_pi.py           # Statistical latency profiler & thermal telemetry
-│   ├── inference_pi.py           # Production PiEdgeClassifier Python API & CLI
-│   ├── live_camera_pi.py         # Real-time webcam / CSI camera digit recognition HUD
-│   ├── setup_pi.sh               # Automated environment bootstrap for Raspberry Pi OS
-│   └── deploy_to_pi.sh           # Network deployment synchronizer (rsync/SSH)
-├── quan_cnn/                     # Core Quantization Python Engine
-│   ├── prepare.py                # Conv-BN-ReLU fusion & observer insertion
-│   ├── calibrate.py              # Representative calibration data loader
-│   ├── audit.py                  # Layer-by-layer SQNR and cosine similarity calculation
-│   ├── evaluate.py               # Accuracy & latency comparison
-│   └── export.py                 # ONNX QDQ & scale table exporter
-├── reports/                      # Benchmark Charts & Technical Reports
-│   ├── quantization_report.md    # Mathematical quantization report
-│   ├── edge_hardware_scrutiny_pi_vs_esp.md # Cross-platform architectural audit
-│   ├── edge_benchmarks_combined.png
-│   ├── edge_platform_comparison.png
-│   ├── raspberry_pi_benchmark.png
-│   └── esp32s3_benchmark.png
-├── scripts/                      # Standalone CLI Tools, Verification & Graph Scripts
-│   ├── quantize_model.py         # Full 7-phase PTQ pipeline (fusion, calibration, audit)
-│   ├── verify_onnx.py            # Standalone ONNX benchmark runner & graph generator
-│   ├── generate_professional_graphs.py # Publication-quality benchmark graph suite
-│   ├── plot_edge_comparison.py   # Cross-platform edge comparison visualization
-│   └── plot_esp32_latency.py     # ESP32-S3 latency distribution visualization
-├── src/                          # Model Topology
-│   └── model_advanced.py         # AdvancedMNISTCNN with Global Average Pooling (GAP)
-├── test_images/                  # 10,000 Individual PNG Images Organized by Digit (0-9)
-├── tests/                        # Automated CI/CD Unit Test Suite
-│   └── test_edge_pipeline.py     # Verification tests for models, scales, and data
-├── .gitignore                    # Clean Git ignore configuration
-├── README.md                     # Repository documentation
-└── requirements.txt              # Standardized pip requirements
+├── data/              # 10,000 MNIST hold-out test dataset (.npz & raw ubyte)
+├── docs/              # Technical architecture documentation & blueprints (file.md)
+├── esp_quantize/      # Tier 1: ESP32-S3 microcontroller pure C99 deployment suite
+├── models/            # Quantized INT8 & FP32 ONNX graphs & parameter tables
+├── pi_quantize/       # Tier 2: Raspberry Pi 5 ARM NEON deployment suite & HUD
+├── quan_cnn/          # Modular PyTorch post-training quantization engine
+├── reports/           # 300 DPI publication benchmark figures & evaluation plots
+├── scripts/           # Standalone verification, benchmarking & plotting tools
+├── src/               # AdvancedMNISTCNN PyTorch model definition
+├── test_images/       # 10,000 isolated PNG test glyphs (0–9)
+├── tests/             # Automated CI unit tests & verification suite
+├── .gitignore         # Git ignore rules
+├── README.md          # Primary project documentation
+└── requirements.txt   # Python dependencies
 ```
+
+### Module Organization
+
+| Directory | Purpose | Deployment Target |
+| :--- | :--- | :--- |
+| [`models/`](models/) | Deployable INT8 & FP32 ONNX graphs, scale/zero-point tables, and sensitivity audit | Cross-Platform |
+| [`esp_quantize/`](esp_quantize/) | Pure C99 inference engine and FreeRTOS firmware (Zero PSRAM, 50.1 KB SRAM) | ESP32-S3 (Tier 1) |
+| [`pi_quantize/`](pi_quantize/) | ARM NEON SIMD accelerated inference, live camera HUD, and thermal telemetry | Raspberry Pi 5 (Tier 2) |
+| [`scripts/`](scripts/) | CLI verification (`verify_onnx.py`), PTQ runner, and publication graph generators | Host Workstation |
+| [`quan_cnn/`](quan_cnn/) | Modular PyTorch quantization package (Conv-BN-ReLU fusion, calibration, SQNR audit) | PyTorch PTQ Engine |
+| [`reports/`](reports/) | 300 DPI publication evaluation plots, comparative figures, and audit reports | Documentation |
+| [`docs/`](docs/) | Complete architectural blueprint ([`file.md`](docs/file.md)), tensor tracking, and proofs | Technical Specs |
+| [`data/`](data/) | Fast NumPy test archive (`mnist_test_10k.npz`) and raw MNIST binaries | Test Datasets |
+| [`tests/`](tests/) | Automated unit tests and pipeline regression verification | CI / CD |
 
 ---
 
