@@ -1,9 +1,9 @@
-# 📘 Deep Learning Architecture Blueprint: AdvancedMNISTCNN
+# Deep Learning Architecture Blueprint: AdvancedMNISTCNN
 ## Modern Deep Convolutional Network with Dual Convolutions & Global Average Pooling
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 1. [Executive Summary & Motivation](#1-executive-summary--motivation)
 2. [Architecture Comparison: Baseline vs. Advanced](#2-architecture-comparison-baseline-vs-advanced)
 3. [Standard Architectural Flow Graph](#3-standard-architectural-flow-graph)

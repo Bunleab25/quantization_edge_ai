@@ -1,10 +1,10 @@
-# 🍓 Raspberry Pi Edge Deployment: INT8 Quantized CNN (`pi_quantize`)
+# Raspberry Pi Edge Deployment: INT8 Quantized CNN (`pi_quantize`)
 
 High-performance, edge-accelerated inference of [`AdvancedMNISTCNN`](../src/model_advanced.py) on **Raspberry Pi 5 / 4 / CM4** Single-Board Computers using **ONNX Runtime** and **ARM NEON SIMD vectorization**.
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 1. [Hardware Specifications & ARM Acceleration](#1-hardware-specifications--arm-acceleration)
 2. [Empirical Benchmark Results](#2-empirical-benchmark-results)
 3. [Directory Architecture](#3-directory-architecture)

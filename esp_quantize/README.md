@@ -1,10 +1,10 @@
-# 🚀 ESP32-S3 Edge Deployment: Advanced MNIST CNN (Pure C Inference Engine)
+# ESP32-S3 Edge Deployment: Advanced MNIST CNN (Pure C Inference Engine)
 
 High-performance, bare-metal edge AI deployment of [`AdvancedMNISTCNN`](../../src/model_advanced.py) ($99.70\%$ INT8 test accuracy) onto an **Espressif ESP32-S3 microcontroller** using **100% pure standard C99** firmware.
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 1. [Hardware Overview & Pinout](#1-hardware-overview--pinout)
 2. [Directory Architecture](#2-directory-architecture)
 3. [Quantization & Math Formulation](#3-quantization--math-formulation)

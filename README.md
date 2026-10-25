@@ -1,18 +1,12 @@
-# ⚡ Edge AI: Quantized CNN Deployment (Raspberry Pi & ESP32-S3)
+# Edge AI: INT8 Quantized CNN Deployment (Raspberry Pi & ESP32-S3)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Accuracy-99.69%25-brightgreen?style=for-the-badge&logo=target" />
-  <img src="https://img.shields.io/badge/Quantization-W8A8_Static_PTQ-blue?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Raspberry_Pi_5-0.28_ms_%7C_3546_FPS-C51A4A?style=for-the-badge&logo=raspberry-pi&logoColor=white" />
-  <img src="https://img.shields.io/badge/ESP32--S3-Zero_PSRAM_%7C_Pure_C99-E7352C?style=for-the-badge&logo=espressif&logoColor=white" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
-</p>
+Deployment suite for post-training quantized (W8A8 INT8) Convolutional Neural Networks across embedded microcontrollers (ESP32-S3) and single-board computers (Raspberry Pi 5).
 
 ---
 
-## 📌 Executive Overview
+## Overview
 
-This repository provides an enterprise-grade, dual-tier **Edge AI quantization and deployment suite** for handwritten digit recognition, taking [`AdvancedMNISTCNN`](src/model_advanced.py) from PyTorch research into real-time physical edge silicon:
+This repository provides an end-to-end edge AI deployment pipeline for handwritten digit recognition, translating [`AdvancedMNISTCNN`](src/model_advanced.py) from PyTorch floating-point research into optimized, real-time edge hardware:
 
 ```
 +---------------------------------------------------------------------------------------------------------+
@@ -24,13 +18,13 @@ This repository provides an enterprise-grade, dual-tier **Edge AI quantization a
 |  - 100% Pure Standard C99 (`esp_quantize/`)      - ARM NEON SIMD Accelerated (`pi_quantize/`)           |
 |  - Zero PSRAM used (50.1 KB internal SRAM)       - ONNX Runtime 1.19+ Engine                            |
 |  - Zero Heap Allocation (Flash `.rodata` weights)- High-Throughput Streamer (3,546.6 FPS)               |
-|  - Target: $3.50 Ultra-Low-Power Smart Sensor    - Target: $80 Embedded Linux Edge Gateway              |
+|  - Target: Ultra-Low-Power Smart Sensor Node     - Target: Embedded Linux Edge Gateway                  |
 +---------------------------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 📊 Comprehensive Hardware Benchmarks
+## Hardware Benchmarks
 
 All metrics are empirically verified over all **10,000 holdout test images** (`data/mnist_test_10k.npz`):
 
@@ -39,7 +33,7 @@ All metrics are empirically verified over all **10,000 holdout test images** (`d
 | **Host PC (x86_64)** | Intel Core i7 (Linux Ubuntu) | FP32 Baseline | 0.176 ms | 5,681.8 FPS | 99.71% (29 errors) | 1,154 KB |
 | **Host PC (x86_64)** | Intel Core i7 (Linux Ubuntu) | INT8 (ONNX QDQ) | **0.104 ms** | **9,593.0 FPS** | **99.69%** (31 errors) | **309.9 KB** |
 | **Raspberry Pi 5** | 4x ARM Cortex-A76 @ 2.4 GHz | FP32 Baseline | 1.733 ms | 577.0 FPS | 99.71% (29 errors) | 1,126.9 KB |
-| **Raspberry Pi 5** | 4x ARM Cortex-A76 @ 2.4 GHz | INT8 (ONNX NEON) | **0.282 ms** | **3,546.6 FPS** | **99.69%** (31 errors) | **309.9 KB** (6.15x faster) |
+| **Raspberry Pi 5** | 4x ARM Cortex-A76 @ 2.4 GHz | INT8 (ONNX NEON) | **0.282 ms** | **3,546.6 FPS** | **99.69%** (31 errors) | **309.9 KB** (6.15x speedup) |
 | **ESP32-S3 MCU** | 2x Xtensa LX7 @ 240 MHz (FreeRTOS)| INT8 (Pure C99) | **666.2 ms** | 1.5 FPS | **100.0%** (Verified Sets) | **280.5 KB** (Flash .rodata) |
 
 <p align="center">
@@ -48,7 +42,7 @@ All metrics are empirically verified over all **10,000 holdout test images** (`d
 
 ---
 
-## 📦 Repository Organization
+## Repository Structure
 
 ```
 quantization_edge_ai/
@@ -63,7 +57,7 @@ quantization_edge_ai/
 ├── generate_professional_graphs.py# Standard publication graph generation script
 ├── requirements.txt              # Standardized pip requirements
 │
-├── pi_quantize/                  # 🍓 Tier 2: Raspberry Pi Edge Deployment
+├── pi_quantize/                  # Tier 2: Raspberry Pi Edge Deployment
 │   ├── README.md                 # Full Raspberry Pi documentation & ARM guide
 │   ├── benchmark_pi.py           # High-precision statistical latency profiler & telemetry
 │   ├── inference_pi.py           # Production PiEdgeClassifier Python class & CLI
@@ -71,7 +65,7 @@ quantization_edge_ai/
 │   ├── setup_pi.sh               # Automated environment bootstrap for Raspberry Pi OS
 │   └── deploy_to_pi.sh           # Network deployment synchronizer (rsync/SSH)
 │
-├── esp_quantize/                 # 📟 Tier 1: ESP32-S3 Microcontroller Edge Deployment
+├── esp_quantize/                 # Tier 1: ESP32-S3 Microcontroller Edge Deployment
 │   ├── README.md                 # Embedded C firmware architecture & wiring guide
 │   ├── converter/export_espdl.py # Transposes PyTorch/ONNX weights into C headers
 │   ├── evaluate_full_10k_c.c     # Host C99 harness benchmarking 10,000 samples
@@ -110,7 +104,7 @@ quantization_edge_ai/
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start
 
 ### 1. Installation
 
@@ -120,15 +114,15 @@ cd quantization_edge_ai
 pip install -r requirements.txt
 ```
 
-### 2. Run Automated Verification Tests
+### 2. Automated Test Verification
 
 ```bash
 python -m unittest discover tests
 ```
 
-### 3. Benchmark ONNX Models on PC
+### 3. Host Benchmark (x86 CPU)
 
-Benchmark the quantized INT8 model on all 10,000 test images with evaluation graph plotting:
+Benchmark the quantized INT8 model on all 10,000 test images:
 ```bash
 python verify_onnx.py --model quantized_model_int8.onnx --samples 10000 --plot
 ```
@@ -140,7 +134,7 @@ python verify_onnx.py --model model_fp32.onnx --samples 10000 --plot
 
 ---
 
-## 🍓 Raspberry Pi 5 Quick Start (`pi_quantize/`)
+## Raspberry Pi 5 Deployment (`pi_quantize/`)
 
 ```bash
 cd pi_quantize
@@ -149,13 +143,13 @@ cd pi_quantize
 chmod +x setup_pi.sh
 ./setup_pi.sh
 
-# Run high-precision statistical benchmark (mean, median, p90, p99, SoC temperature):
+# Run statistical benchmark (mean, median, p90, p99, SoC temperature):
 python benchmark_pi.py --model ../quantized_model_int8.onnx --samples 10000 --plot
 
 # Single image inference:
 python inference_pi.py --image ../test_images/7/img_00000.png
 
-# Real-time live camera digit recognizer HUD:
+# Real-time live camera digit recognition HUD:
 python live_camera_pi.py --camera 0
 ```
 
@@ -165,7 +159,7 @@ python live_camera_pi.py --camera 0
 
 ---
 
-## 📟 ESP32-S3 Microcontroller Deployment (`esp_quantize/`)
+## ESP32-S3 Microcontroller Deployment (`esp_quantize/`)
 
 The quantized neural network runs as a **bare-metal pure C99 firmware** with **zero dynamic heap allocation** and **0 KB external PSRAM**:
 
@@ -188,7 +182,7 @@ python tools/esp32_streamer.py --port /dev/ttyUSB0 --baud 115200 --samples 20
 
 ---
 
-## 🔬 Quantization Mathematical Formulation
+## Quantization Mathematical Formulation
 
 Standard floating-point convolution $Y = X \cdot W + B$ is mapped into integer space via affine quantization:
 $$q = \text{clip}\left(\left\lfloor \frac{r}{S} \right\rceil + Z, q_{\min}, q_{\max}\right)$$
@@ -205,7 +199,7 @@ $$q = \text{clip}\left(\left\lfloor \frac{r}{S} \right\rceil + Z, q_{\min}, q_{\
 
 ---
 
-## 📈 Cross-Platform Latency Comparison
+## Cross-Platform Latency Comparison
 
 <p align="center">
   <img src="reports/edge_platform_comparison.png" width="80%" alt="Cross-Platform Log-Scale Comparison" />
@@ -213,7 +207,7 @@ $$q = \text{clip}\left(\left\lfloor \frac{r}{S} \right\rceil + Z, q_{\min}, q_{\
 
 ---
 
-## 📄 License
+## License
 
 MIT License.
 <!-- YOLO achievement update -->
