@@ -94,11 +94,6 @@ flowchart TD
     S3_OUT --> GAP --> FLAT --> DROP --> FC
 ```
 
-### Visual Architectural Topology:
-<p align="center">
-  <img src="reports/architecture_diagram.png" width="85%" alt="AdvancedMNISTCNN Visual Architecture" />
-</p>
-
 ---
 
 # 4. Layer-by-Layer Mathematical Tensor Tracking
