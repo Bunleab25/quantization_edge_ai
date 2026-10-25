@@ -83,6 +83,9 @@ def resolve_model_path(model_arg: str) -> str:
     """Finds model path either locally or relative to repo root."""
     candidates = [
         model_arg,
+        os.path.join("models", model_arg),
+        os.path.join("..", "models", model_arg),
+        os.path.join(os.path.dirname(__file__), "..", "models", model_arg),
         os.path.join("..", model_arg),
         os.path.join(os.path.dirname(__file__), "..", model_arg),
         os.path.join(os.path.dirname(__file__), model_arg),

@@ -28,7 +28,8 @@ import matplotlib.ticker as ticker
 import numpy as np
 
 # Ensure project root is in sys.path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, REPO_ROOT)
 
 from src.model_advanced import AdvancedMNISTCNN
 from quan_cnn.prepare import prepare_model_for_quantization, QuantizableAdvancedMNISTCNN
@@ -52,6 +53,8 @@ def plot_quantization_report(
       Panel 2: Model Size & Latency Comparison
       Panel 3: Layer SQNR & Cosine Similarity Audit
     """
+    if not os.path.isabs(save_path):
+        save_path = os.path.join(REPO_ROOT, save_path)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5.5), dpi=300)
 

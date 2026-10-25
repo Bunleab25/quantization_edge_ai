@@ -20,7 +20,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 
-os.makedirs("reports", exist_ok=True)
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.makedirs(os.path.join(REPO_ROOT, "reports"), exist_ok=True)
 
 # Common styling configuration
 plt.rcParams["font.sans-serif"] = ["DejaVu Sans", "Helvetica", "Arial"]
@@ -32,6 +33,9 @@ plt.rcParams["axes.linewidth"] = 1.2
 # Graph 1: Raspberry Pi 5 (FP32 vs. INT8)
 # ==============================================================================
 def generate_pi5_graph(save_path="reports/raspberry_pi_benchmark.png"):
+    if not os.path.isabs(save_path):
+        save_path = os.path.join(REPO_ROOT, save_path)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig, ax = plt.subplots(figsize=(7.5, 4.5), dpi=300)
     
     categories = ["FP32 Baseline", "INT8 Quantized"]
@@ -95,6 +99,9 @@ def generate_pi5_graph(save_path="reports/raspberry_pi_benchmark.png"):
 # Graph 2: ESP32-S3 (FP32 vs. INT8)
 # ==============================================================================
 def generate_esp32_graph(save_path="reports/esp32s3_benchmark.png"):
+    if not os.path.isabs(save_path):
+        save_path = os.path.join(REPO_ROOT, save_path)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig, ax = plt.subplots(figsize=(7.5, 4.5), dpi=300)
     
     categories = ["FP32 Baseline", "INT8 Quantized"]
@@ -158,6 +165,9 @@ def generate_esp32_graph(save_path="reports/esp32s3_benchmark.png"):
 # Graph 3: Cross-Platform Log-Scale Comparison (Pi 5 vs. ESP32-S3)
 # ==============================================================================
 def generate_platform_comparison_log(save_path="reports/edge_platform_comparison.png"):
+    if not os.path.isabs(save_path):
+        save_path = os.path.join(REPO_ROOT, save_path)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig, ax = plt.subplots(figsize=(8.2, 5.0), dpi=300)
     
     platforms = [
@@ -240,6 +250,9 @@ def generate_platform_comparison_log(save_path="reports/edge_platform_comparison
 # Graph 4: Master 2-Panel Figure (Side-by-Side Pi 5 & ESP32-S3)
 # ==============================================================================
 def generate_combined_master_figure(save_path="reports/edge_benchmarks_combined.png"):
+    if not os.path.isabs(save_path):
+        save_path = os.path.join(REPO_ROOT, save_path)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 4.8), dpi=300)
     
     categories = ["FP32 Baseline", "INT8 Quantized"]

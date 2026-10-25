@@ -6,7 +6,7 @@ Deployment suite for post-training quantized (W8A8 INT8) Convolutional Neural Ne
 
 ## Overview
 
-This repository provides an end-to-end edge AI deployment pipeline for handwritten digit recognition, translating [`AdvancedMNISTCNN`](src/model_advanced.py) from PyTorch floating-point research into optimized, real-time edge hardware:
+This repository provides an end-to-end edge AI deployment pipeline for handwritten digit recognition, translating [`AdvancedMNISTCNN`](src/model_advanced.py) from PyTorch floating-point research into optimized, real-time edge hardware (detailed technical blueprints and mathematics in [`docs/file.md`](docs/file.md)):
 
 ```
 +---------------------------------------------------------------------------------------------------------+
@@ -46,60 +46,54 @@ All metrics are empirically verified over all **10,000 holdout test images** (`d
 
 ```
 quantization_edge_ai/
-├── quantized_model_int8.onnx     # Production W8A8 INT8 ONNX graph (309.9 KB)
-├── model_fp32.onnx               # Unquantized FP32 baseline ONNX graph (1.15 MB)
-├── quantization_scales_zp.json   # Layer-by-layer scale (S) and zero-point (Z) tables
-├── quantization_audit.json       # Quantitative sensitivity audit (Layer SQNR & Cosine Sim)
-├── quantize_model.py             # Full 7-phase PTQ pipeline (fusion, calibration, audit)
-├── verify_onnx.py                # Standalone ONNX benchmark runner & graph generator
-├── plot_edge_comparison.py       # Cross-platform edge comparison visualization
-├── plot_esp32_latency.py         # ESP32-S3 latency distribution visualization
-├── generate_professional_graphs.py# Standard publication graph generation script
-├── requirements.txt              # Standardized pip requirements
-│
-├── pi_quantize/                  # Tier 2: Raspberry Pi Edge Deployment
-│   ├── README.md                 # Full Raspberry Pi documentation & ARM guide
-│   ├── benchmark_pi.py           # High-precision statistical latency profiler & telemetry
-│   ├── inference_pi.py           # Production PiEdgeClassifier Python class & CLI
-│   ├── live_camera_pi.py         # Real-time webcam / CSI camera digit recognition HUD
-│   ├── setup_pi.sh               # Automated environment bootstrap for Raspberry Pi OS
-│   └── deploy_to_pi.sh           # Network deployment synchronizer (rsync/SSH)
-│
-├── esp_quantize/                 # Tier 1: ESP32-S3 Microcontroller Edge Deployment
-│   ├── README.md                 # Embedded C firmware architecture & wiring guide
+├── data/                         # 10,000 MNIST Hold-Out Test Dataset (.npz & raw ubyte)
+├── docs/                         # Technical documentation & architecture blueprints
+│   └── file.md                   # Complete architectural blueprint & mathematical specification
+├── esp_quantize/                 # Tier 1: ESP32-S3 Microcontroller Edge Deployment (C99)
 │   ├── converter/export_espdl.py # Transposes PyTorch/ONNX weights into C headers
 │   ├── evaluate_full_10k_c.c     # Host C99 harness benchmarking 10,000 samples
 │   ├── test_pc_inference.c       # Quick C99 verification on embedded digits
 │   ├── tools/esp32_streamer.py   # Live USB-UART streamer from host to ESP32-S3
 │   └── firmware/                 # Complete ESP-IDF FreeRTOS C project (Zero-PSRAM)
-│       ├── sdkconfig             # Tuned ESP-IDF hardware config
-│       └── main/                 # Pure C99 inference engine, LCD driver & model weights
-│
+├── models/                       # Edge-Deployable Model Artifacts & Audit Logs
+│   ├── quantized_model_int8.onnx # Production W8A8 INT8 ONNX graph (309.9 KB)
+│   ├── model_fp32.onnx           # Unquantized FP32 baseline ONNX graph (1.15 MB)
+│   ├── file.onnx                 # INT8 ONNX deployment alias
+│   ├── quantization_scales_zp.json # Layer-by-layer scale (S) and zero-point (Z) tables
+│   └── quantization_audit.json   # Quantitative sensitivity audit (Layer SQNR & Cosine Sim)
+├── pi_quantize/                  # Tier 2: Raspberry Pi Edge Deployment Suite
+│   ├── benchmark_pi.py           # Statistical latency profiler & thermal telemetry
+│   ├── inference_pi.py           # Production PiEdgeClassifier Python API & CLI
+│   ├── live_camera_pi.py         # Real-time webcam / CSI camera digit recognition HUD
+│   ├── setup_pi.sh               # Automated environment bootstrap for Raspberry Pi OS
+│   └── deploy_to_pi.sh           # Network deployment synchronizer (rsync/SSH)
 ├── quan_cnn/                     # Core Quantization Python Engine
 │   ├── prepare.py                # Conv-BN-ReLU fusion & observer insertion
 │   ├── calibrate.py              # Representative calibration data loader
 │   ├── audit.py                  # Layer-by-layer SQNR and cosine similarity calculation
 │   ├── evaluate.py               # Accuracy & latency comparison
 │   └── export.py                 # ONNX QDQ & scale table exporter
-│
-├── src/                          # Model Topology
-│   └── model_advanced.py         # AdvancedMNISTCNN with Global Average Pooling (GAP)
-│
-├── data/                         # 10,000 MNIST Hold-Out Test Dataset
-│   ├── mnist_test_10k.npz        # NumPy array (10,000 test images & labels)
-│   └── MNIST/raw/                # Standard MNIST binary ubyte files
-│
 ├── reports/                      # Benchmark Charts & Technical Reports
-│   ├── quantization_report.md    # In-depth mathematical quantization report
+│   ├── quantization_report.md    # Mathematical quantization report
 │   ├── edge_hardware_scrutiny_pi_vs_esp.md # Cross-platform architectural audit
 │   ├── edge_benchmarks_combined.png
 │   ├── edge_platform_comparison.png
 │   ├── raspberry_pi_benchmark.png
 │   └── esp32s3_benchmark.png
-│
+├── scripts/                      # Standalone CLI Tools, Verification & Graph Scripts
+│   ├── quantize_model.py         # Full 7-phase PTQ pipeline (fusion, calibration, audit)
+│   ├── verify_onnx.py            # Standalone ONNX benchmark runner & graph generator
+│   ├── generate_professional_graphs.py # Publication-quality benchmark graph suite
+│   ├── plot_edge_comparison.py   # Cross-platform edge comparison visualization
+│   └── plot_esp32_latency.py     # ESP32-S3 latency distribution visualization
+├── src/                          # Model Topology
+│   └── model_advanced.py         # AdvancedMNISTCNN with Global Average Pooling (GAP)
 ├── test_images/                  # 10,000 Individual PNG Images Organized by Digit (0-9)
-└── tests/                        # Automated CI/CD Unit Test Suite
-    └── test_edge_pipeline.py     # Verification tests for models, scales, and data
+├── tests/                        # Automated CI/CD Unit Test Suite
+│   └── test_edge_pipeline.py     # Verification tests for models, scales, and data
+├── .gitignore                    # Clean Git ignore configuration
+├── README.md                     # Repository documentation
+└── requirements.txt              # Standardized pip requirements
 ```
 
 ---
@@ -124,12 +118,12 @@ python -m unittest discover tests
 
 Benchmark the quantized INT8 model on all 10,000 test images:
 ```bash
-python verify_onnx.py --model quantized_model_int8.onnx --samples 10000 --plot
+python scripts/verify_onnx.py --model models/quantized_model_int8.onnx --samples 10000 --plot
 ```
 
 Benchmark on the baseline FP32 model:
 ```bash
-python verify_onnx.py --model model_fp32.onnx --samples 10000 --plot
+python scripts/verify_onnx.py --model models/model_fp32.onnx --samples 10000 --plot
 ```
 
 ---
@@ -144,7 +138,7 @@ chmod +x setup_pi.sh
 ./setup_pi.sh
 
 # Run statistical benchmark (mean, median, p90, p99, SoC temperature):
-python benchmark_pi.py --model ../quantized_model_int8.onnx --samples 10000 --plot
+python benchmark_pi.py --model ../models/quantized_model_int8.onnx --samples 10000 --plot
 
 # Single image inference:
 python inference_pi.py --image ../test_images/7/img_00000.png

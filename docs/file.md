@@ -29,7 +29,7 @@ The **AdvancedMNISTCNN** architecture is engineered to resolve the subtle edge-c
 
 ### Exploratory Data Analysis (EDA):
 <p align="center">
-  <img src="reports/eda_samples.png" width="85%" alt="MNIST Exploratory Data Analysis" />
+  <img src="../reports/eda_samples.png" width="85%" alt="MNIST Exploratory Data Analysis" />
 </p>
 
 ### Core Architectural Philosophy:
@@ -243,18 +243,18 @@ python train_advanced.py --epochs 12 --batch-size 64 --lr 0.001 --label-smoothin
 
 ### Training Dynamics & Fit Diagnostic:
 <p align="center">
-  <img src="reports/learning_curves.png" width="49%" alt="Comparative Learning Curves" />
-  <img src="reports/fit_diagnostic_analysis.png" width="49%" alt="Fit Diagnostic Analysis" />
+  <img src="../reports/learning_curves.png" width="49%" alt="Comparative Learning Curves" />
+  <img src="../reports/fit_diagnostic_analysis.png" width="49%" alt="Fit Diagnostic Analysis" />
 </p>
 
 ### Statistical Evaluation & Error Diagnostics:
 <p align="center">
-  <img src="reports/confusion_matrix_advanced.png" width="49%" alt="Confusion Matrix" />
-  <img src="reports/misclassifications.png" width="49%" alt="Misclassified Samples Breakdown" />
+  <img src="../reports/confusion_matrix_advanced.png" width="49%" alt="Confusion Matrix" />
+  <img src="../reports/misclassifications.png" width="49%" alt="Misclassified Samples Breakdown" />
 </p>
 
 <p align="center">
-  <img src="reports/real_test_predictions.png" width="80%" alt="Hold-Out Test Predictions" />
+  <img src="../reports/real_test_predictions.png" width="80%" alt="Hold-Out Test Predictions" />
 </p>
 
 ---
@@ -273,7 +273,7 @@ To transition the trained floating-point model (`AdvancedMNISTCNN`) to resource-
 3. **Layer-by-Layer Sensitivity Audit**:
    Verified that every quantized layer preserved signal integrity well above the $30\text{ dB}$ Signal-to-Quantization-Noise Ratio (SQNR) threshold, with cosine similarity $> 0.999$.
 4. **Deployable ONNX Graph Generation**:
-   Exported both baseline floating-point (`model_fp32.onnx`) and integer-quantized (`quantized_model_int8.onnx`) graphs with input tensor dimensions `(1, 1, 28, 28)` for single-sample edge streaming.
+   Exported both baseline floating-point (`models/model_fp32.onnx`) and integer-quantized (`models/quantized_model_int8.onnx`) graphs with input tensor dimensions `(1, 1, 28, 28)` for single-sample edge streaming.
 
 ### Empirical Quantization Verification Results:
 | Metric | FP32 Baseline | INT8 Quantized | Delta / Impact |
@@ -285,12 +285,12 @@ To transition the trained floating-point model (`AdvancedMNISTCNN`) to resource-
 
 ### Post-Training Quantization Report & Layer Sensitivity Audit:
 <p align="center">
-  <img src="reports/quantization_report.png" width="95%" alt="Quantization Technical Report" />
+  <img src="../reports/quantization_report.png" width="95%" alt="Quantization Technical Report" />
 </p>
 
 <p align="center">
-  <img src="reports/quantization_accuracy.png" width="49%" alt="Quantization Accuracy" />
-  <img src="reports/quantization_latency.png" width="49%" alt="Quantization Latency" />
+  <img src="../reports/quantization_accuracy.png" width="49%" alt="Quantization Accuracy" />
+  <img src="../reports/quantization_latency.png" width="49%" alt="Quantization Latency" />
 </p>
 
 ---
@@ -309,12 +309,12 @@ To keep the edge deployment repository lightweight and prevent pushing the 60,00
 * **Fast NumPy Archive**: Pre-packaged `data/mnist_test_10k.npz` ($1.6\text{ MB}$) for instant 1-line loading `np.load('data/mnist_test_10k.npz')`.
 * **Individual PNG Glyphs**: Generated all 10,000 $28\times 28$ grayscale test images under `test_images/` categorized by digit classes `0/` through `9/` ($2.6\text{ MB}$ total) for real-world image inference testing.
 
-### 2. Deployed Model Artifacts
-* **`quantized_model_int8.onnx`** ($317\text{ KB}$): INT8 QDQ quantized computational graph.
-* **`model_fp32.onnx`** ($1.15\text{ MB}$): Unquantized baseline model.
-* **`quantization_scales_zp.json`**: Layer-by-layer scale ($S$) and zero-point ($Z$) lookups for embedded C/C++ integer kernels (e.g. ESP-NN / CMSIS-NN).
-* **`quantization_audit.json`**: Quantitative sensitivity audit records.
-* **`verify_onnx.py`**: Standalone evaluation script with automated latency profiling and accuracy validation.
+### 2. Deployed Model Artifacts & Tooling
+* **`models/quantized_model_int8.onnx`** ($317\text{ KB}$): INT8 QDQ quantized computational graph.
+* **`models/model_fp32.onnx`** ($1.15\text{ MB}$): Unquantized baseline model.
+* **`models/quantization_scales_zp.json`**: Layer-by-layer scale ($S$) and zero-point ($Z$) lookups for embedded C/C++ integer kernels (e.g. ESP-NN / CMSIS-NN).
+* **`models/quantization_audit.json`**: Quantitative sensitivity audit records.
+* **`scripts/verify_onnx.py`**: Standalone evaluation script with automated latency profiling and accuracy validation.
 * **`.gitignore`**: Strictly excludes bulky PyTorch checkpoints (`*.pth`, `*.pt`, `best_model.pth`, `best_advanced_model.pth`) and temporary caches.
 
 ### 3. Execution Commands Executed
@@ -435,7 +435,7 @@ Frames streamed live from host PC over USB at 115200 baud:
 
 ### ESP32-S3 Hardware Latency & Accuracy Benchmark:
 <p align="center">
-  <img src="reports/esp32s3_benchmark.png" width="75%" alt="ESP32-S3 Hardware Benchmark" />
+  <img src="../reports/esp32s3_benchmark.png" width="75%" alt="ESP32-S3 Hardware Benchmark" />
 </p>
 
 ---
@@ -467,11 +467,11 @@ To validate edge performance on Linux single-board computers (SBCs), the quantiz
 
 ### 2. Empirical Raspberry Pi Benchmark Figures:
 <p align="center">
-  <img src="reports/raspberry_pi_benchmark.png" width="75%" alt="Raspberry Pi 5 Benchmark" />
+  <img src="../reports/raspberry_pi_benchmark.png" width="75%" alt="Raspberry Pi 5 Benchmark" />
 </p>
 
 <p align="center">
-  <img src="reports/raspberry_pi_accuracy.png" width="75%" alt="Raspberry Pi Accuracy Convergence" />
+  <img src="../reports/raspberry_pi_accuracy.png" width="75%" alt="Raspberry Pi Accuracy Convergence" />
 </p>
 
 ---
@@ -497,12 +497,12 @@ To evaluate edge scalability across computing tiers, we audited inference latenc
 
 ### Comprehensive Master Figure (Raspberry Pi 5 vs. ESP32-S3):
 <p align="center">
-  <img src="reports/edge_benchmarks_combined.png" width="95%" alt="Edge Benchmarks Combined" />
+  <img src="../reports/edge_benchmarks_combined.png" width="95%" alt="Edge Benchmarks Combined" />
 </p>
 
 ### Cross-Platform Log-Scale Latency vs. Power Comparison:
 <p align="center">
-  <img src="reports/edge_platform_comparison.png" width="80%" alt="Log-Scale Latency Comparison" />
+  <img src="../reports/edge_platform_comparison.png" width="80%" alt="Log-Scale Latency Comparison" />
 </p>
 
 

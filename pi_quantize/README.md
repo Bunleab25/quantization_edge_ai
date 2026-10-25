@@ -86,12 +86,12 @@ pip install onnxruntime numpy pillow matplotlib opencv-python
 To benchmark the INT8 quantized model with latency distribution statistics (`mean`, `median`, `p90`, `p99`, `min`, `max`, `std`), CPU temperature telemetry, and evaluation graph generation:
 
 ```bash
-python benchmark_pi.py --model ../quantized_model_int8.onnx --samples 10000 --plot
+python benchmark_pi.py --model ../models/quantized_model_int8.onnx --samples 10000 --plot
 ```
 
 To compare against the floating-point baseline:
 ```bash
-python benchmark_pi.py --model ../model_fp32.onnx --samples 10000 --plot
+python benchmark_pi.py --model ../models/model_fp32.onnx --samples 10000 --plot
 ```
 
 ---

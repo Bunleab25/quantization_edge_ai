@@ -44,6 +44,9 @@ class PiEdgeClassifier:
         if model_path is None:
             # Look for quantized model in common locations
             candidates = [
+                os.path.join("models", "quantized_model_int8.onnx"),
+                os.path.join("..", "models", "quantized_model_int8.onnx"),
+                os.path.join(os.path.dirname(__file__), "..", "models", "quantized_model_int8.onnx"),
                 "quantized_model_int8.onnx",
                 os.path.join("..", "quantized_model_int8.onnx"),
                 os.path.join(os.path.dirname(__file__), "..", "quantized_model_int8.onnx"),

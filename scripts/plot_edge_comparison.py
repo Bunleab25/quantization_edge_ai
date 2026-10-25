@@ -16,7 +16,11 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 def plot_cross_platform_comparison(save_path="reports/edge_platform_comparison.png"):
+    if not os.path.isabs(save_path):
+        save_path = os.path.join(REPO_ROOT, save_path)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(8.2, 5.0), dpi=300)

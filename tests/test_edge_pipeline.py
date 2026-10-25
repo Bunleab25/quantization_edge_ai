@@ -20,10 +20,22 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 class TestEdgeQuantizationPipeline(unittest.TestCase):
     def setUp(self):
-        self.int8_path = os.path.join(REPO_ROOT, "quantized_model_int8.onnx")
-        self.fp32_path = os.path.join(REPO_ROOT, "model_fp32.onnx")
-        self.scales_path = os.path.join(REPO_ROOT, "quantization_scales_zp.json")
-        self.audit_path = os.path.join(REPO_ROOT, "quantization_audit.json")
+        self.int8_path = os.path.join(REPO_ROOT, "models", "quantized_model_int8.onnx")
+        if not os.path.isfile(self.int8_path):
+            self.int8_path = os.path.join(REPO_ROOT, "quantized_model_int8.onnx")
+
+        self.fp32_path = os.path.join(REPO_ROOT, "models", "model_fp32.onnx")
+        if not os.path.isfile(self.fp32_path):
+            self.fp32_path = os.path.join(REPO_ROOT, "model_fp32.onnx")
+
+        self.scales_path = os.path.join(REPO_ROOT, "models", "quantization_scales_zp.json")
+        if not os.path.isfile(self.scales_path):
+            self.scales_path = os.path.join(REPO_ROOT, "quantization_scales_zp.json")
+
+        self.audit_path = os.path.join(REPO_ROOT, "models", "quantization_audit.json")
+        if not os.path.isfile(self.audit_path):
+            self.audit_path = os.path.join(REPO_ROOT, "quantization_audit.json")
+
         self.data_npz_path = os.path.join(REPO_ROOT, "data", "mnist_test_10k.npz")
         self.esp_model_data = os.path.join(REPO_ROOT, "esp_quantize", "firmware", "main", "model_data.h")
 

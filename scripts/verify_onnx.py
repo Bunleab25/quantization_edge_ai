@@ -21,15 +21,41 @@ import time
 import numpy as np
 import onnxruntime as ort
 
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+def resolve_model_path(model_arg: str) -> str:
+    candidates = [
+        model_arg,
+        os.path.join(REPO_ROOT, "models", os.path.basename(model_arg)),
+        os.path.join(REPO_ROOT, model_arg),
+        os.path.join("models", model_arg),
+        os.path.join("..", "models", model_arg),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return os.path.abspath(c)
+    return model_arg
+
 def load_test_dataset(data_dir: str = "data"):
     """Loads 10,000 MNIST test images and labels from npz or raw ubyte."""
-    npz_path = os.path.join(data_dir, "mnist_test_10k.npz")
+    candidates = [
+        data_dir,
+        os.path.join(REPO_ROOT, data_dir),
+        os.path.join("..", data_dir),
+    ]
+    target_dir = data_dir
+    for c in candidates:
+        if os.path.isdir(c):
+            target_dir = c
+            break
+
+    npz_path = os.path.join(target_dir, "mnist_test_10k.npz")
     if os.path.exists(npz_path):
         data = np.load(npz_path)
         return data["images"], data["labels"]
 
-    raw_img = os.path.join(data_dir, "MNIST", "raw", "t10k-images-idx3-ubyte")
-    raw_lbl = os.path.join(data_dir, "MNIST", "raw", "t10k-labels-idx1-ubyte")
+    raw_img = os.path.join(target_dir, "MNIST", "raw", "t10k-images-idx3-ubyte")
+    raw_lbl = os.path.join(target_dir, "MNIST", "raw", "t10k-labels-idx1-ubyte")
     if os.path.exists(raw_img) and os.path.exists(raw_lbl):
         with open(raw_img, "rb") as f:
             images = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 28, 28)
@@ -37,7 +63,7 @@ def load_test_dataset(data_dir: str = "data"):
             labels = np.frombuffer(f.read(), np.uint8, offset=8)
         return images, labels
 
-    raise FileNotFoundError(f"Test dataset not found in {data_dir}!")
+    raise FileNotFoundError(f"Test dataset not found in {data_dir} or {target_dir}!")
 
 def preprocess_mnist(images: np.ndarray) -> np.ndarray:
     """Standard MNIST normalization: (x / 255.0 - 0.1307) / 0.3081"""
@@ -97,6 +123,8 @@ def plot_onnx_accuracy_graph(
     try:
         import matplotlib.pyplot as plt
         import matplotlib.ticker as ticker
+        if not os.path.isabs(save_path):
+            save_path = os.path.join(REPO_ROOT, save_path)
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         fig, ax = plt.subplots(figsize=(7.5, 4.2), dpi=300)
         ax.plot(range(len(cum_acc)), cum_acc, label=model_label, color="#1f77b4" if "FP32" in model_label else "#ff7f0e", linewidth=1.5)
@@ -116,18 +144,19 @@ def plot_onnx_accuracy_graph(
 
 def main():
     parser = argparse.ArgumentParser(description="Verify ONNX edge models on MNIST test dataset")
-    parser.add_argument("--model", type=str, default="quantized_model_int8.onnx", help="Path to ONNX model")
+    parser.add_argument("--model", type=str, default="models/quantized_model_int8.onnx", help="Path to ONNX model")
     parser.add_argument("--data-dir", type=str, default="data", help="Path to dataset directory")
     parser.add_argument("--samples", type=int, default=10000, help="Number of test samples to benchmark")
     parser.add_argument("--plot", action="store_true", help="Generate classic style evaluation graph")
     args = parser.parse_args()
 
+    model_path = resolve_model_path(args.model)
     images, labels = load_test_dataset(args.data_dir)
     images_proc = preprocess_mnist(images)
-    cum_acc = benchmark_model(args.model, images_proc, labels, args.samples)
+    cum_acc = benchmark_model(model_path, images_proc, labels, args.samples)
 
     if args.plot:
-        label = "FP32" if "fp32" in args.model.lower() else "INT8"
+        label = "FP32" if "fp32" in model_path.lower() else "INT8"
         plot_onnx_accuracy_graph(cum_acc, model_label=label)
 
 
